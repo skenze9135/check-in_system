@@ -44,6 +44,7 @@ textarea{width:100%;height:120px;margin-top:8px;background:var(--bg);color:var(-
 </head>
 <body>
 <div class="wrap">
+<div id="syncb" class="mu" style="text-align:right;font-size:12px;margin-bottom:6px"></div>
 <div id="adm" class="card hide"></div>
 
 <!-- PAGE 1: ACCESS CODE -->
@@ -264,7 +265,7 @@ function saveMember(){
   m.editGate = changed ? gate : (old.editGate || "");
   m.editTime = changed ? new Date().toLocaleString() : (old.editTime || "");
   if (i >= 0) members[i] = m; else members.push(m);
-  store.set("gt_members", members); isNew = false; current = m; render();
+  store.set("gt_members", members); syncMember(m); isNew = false; current = m; render();
   return m;
 }
 $("find").onclick = find;
@@ -276,8 +277,9 @@ $("admit").onclick = () => {
     reAdmit = m.no; status("⚠ Already entered this session. Press Admit again to record a re-entry.", "wa"); return;
   }
   reAdmit = null;
-  entries.unshift({no:m.no, name:m.name, phone:m.phone, gate, sess:act().id, time: new Date().toLocaleString()});
-  store.set("gt_entries", entries); viewSess = act().id; render();
+  const en = {id:"e"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), ts:Date.now(), no:m.no, name:m.name, phone:m.phone, gate, sess:act().id, time:new Date().toLocaleString()};
+  entries.unshift(en);
+  store.set("gt_entries", entries); dbSet("entries/"+en.id, en); viewSess = act().id; render();
   $("mno").value=""; resetForm(); status(`✔ ${esc(m.name)} admitted` + (entries.filter(e=>e.no===m.no && e.sess===act().id).length>1 ? " (re-entry recorded)" : ""), "ok"); $("mno").focus();
 };
 
@@ -348,8 +350,10 @@ $("clr").onclick = () => {
 };
 $("clrno").onclick = () => $("clrbox").classList.add("hide");
 $("clryes").onclick = () => {
+  const removed = viewSess==="ALL" ? entries : entries.filter(e => e.sess === viewSess);
   entries = viewSess==="ALL" ? [] : entries.filter(e => e.sess !== viewSess);
   store.set("gt_entries", entries);
+  (async () => { for (const e of removed) if (e.id) await dbDel("entries/"+e.id); })();
   $("clrbox").classList.add("hide"); $("out").classList.add("hide");
   render(); status("Log cleared for " + esc(clrScope()), "ok");
 };
@@ -482,6 +486,65 @@ function openAdmin(){
 function closeAdmin(){ $("adm").classList.add("hide"); $(admPrev).classList.remove("hide"); }
 $("adminBtn").onclick = $("adminBtn1").onclick = openAdmin;
 
+
+// ---------- Shared sync across devices (db capability) ----------
+let dbx = null;
+function setSync(t, c){ const b = $("syncb"); b.textContent = t; b.className = c || "mu"; }
+const clean = o => JSON.parse(JSON.stringify(o));
+async function dbSet(path, data){
+  if (!dbx) return;
+  try { await dbx.doc(path).set(clean(data)); setSync("Synced ✓ live — shared across devices", "ok"); }
+  catch(e){ setSync("Not saved to shared data (" + ((e && e.code) || "error") + "). You may have view-only access.", "er"); }
+}
+async function dbDel(path){ if (!dbx) return; try { await dbx.doc(path).delete(); } catch(e){ setSync("Delete not synced (" + ((e && e.code) || "error") + ")", "er"); } }
+const syncMember = m => dbSet("members/" + m.no, m);
+const hash36 = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+(async () => {
+  try { dbx = (window.claude && claude.use) ? await claude.use("db") : null; } catch(e){ dbx = null; }
+  if (!dbx){ setSync("Local only — data is NOT shared between devices (open the shared link while signed in to claude.ai)", "wa"); return; }
+  setSync("Connecting to shared data…");
+  const L = {m: members.slice(), e: entries.map(x => ({...x})), s: sessions.slice()};   // this device's data, for one-time merge
+  const got = {}; let ready = false;
+  const byTs = dir => (a, b) => dir * ((a.ts || 0) - (b.ts || 0));
+  function applyAll(d){
+    const wasActive = viewSess === act().id;
+    if (d.m && d.m.length){ members = d.m; store.set("gt_members", members); }
+    if (d.e){ entries = d.e.slice().sort(byTs(-1)); store.set("gt_entries", entries); }
+    if (d.s && d.s.length){ sessions = d.s.slice().sort(byTs(1)); store.set("gt_sessions", sessions); }
+    if (viewSess !== "ALL" && (wasActive || !sessions.some(x => x.id === viewSess))) viewSess = act().id;
+    render();
+    if (!$("adm").classList.contains("hide") && admOk) admTable();
+    setSync("Synced ✓ live — shared across devices", "ok");
+  }
+  async function firstRun(){
+    ready = true;
+    let mig = false; try { mig = localStorage.getItem("gt_migrated") === "1"; } catch(e){}
+    const add = {m: [], e: [], s: []};
+    if (!mig){
+      const ids = k => new Set(got[k].map(x => k === "m" ? x.no : x.id));
+      const hm = ids("m"), he = ids("e"), hs = ids("s");
+      L.m.forEach(x => { if (!hm.has(x.no)) add.m.push(x); });
+      L.s.forEach(x => { const o = {...x, ts: x.ts || Date.parse(x.start) || 0}; if (!hs.has(o.id)) add.s.push(o); });
+      L.e.forEach(x => { const o = {...x}; o.ts = o.ts || Date.parse(o.time) || 0; o.id = o.id || "l" + hash36([o.sess,o.no,o.gate,o.time].join("|")); if (!he.has(o.id)) add.e.push(o); });
+    }
+    applyAll({m: got.m.concat(add.m), e: got.e.concat(add.e), s: got.s.concat(add.s)});
+    for (const x of add.m) await dbSet("members/" + x.no, x);
+    for (const x of add.s) await dbSet("sessions/" + x.id, x);
+    for (const x of add.e) await dbSet("entries/" + x.id, x);
+    try { localStorage.setItem("gt_migrated", "1"); } catch(e){}
+  }
+  const onSnap = (k, snap) => {
+    if (snap.metadata.fromCache) return;            // wait for the server-definitive view
+    got[k] = snap.docs.map(d => d.data());
+    if (!ready){ if (got.m && got.e && got.s) firstRun(); return; }
+    applyAll({[k]: got[k]});
+  };
+  const err = e => setSync("Shared data unavailable (" + ((e && e.code) || "error") + ") — working locally", "wa");
+  dbx.collection("members").onSnapshot(s => onSnap("m", s), err);
+  dbx.collection("entries").onSnapshot(s => onSnap("e", s), err);
+  dbx.collection("sessions").onSnapshot(s => onSnap("s", s), err);
+})();
+
 $("q").oninput = render;
 $("vsess").onchange = () => { viewSess = $("vsess").value; $("out").classList.add("hide"); render(); };
 $("startsess").onclick = () => {
@@ -489,8 +552,9 @@ $("startsess").onclick = () => {
   if (se){ status(se, "er"); return; }
   const name = raw || ("Session " + (sessions.length+1));
   if (sessions.some(x => x.name === name)){ status("Session name already used", "er"); return; }
-  sessions.push({id:"s"+Date.now(), name, start:new Date().toLocaleString()});
-  store.set("gt_sessions", sessions); viewSess = act().id; $("newsess").value = ""; $("out").classList.add("hide");
+  const ns = {id:"s"+Date.now(), ts:Date.now(), name, start:new Date().toLocaleString()};
+  sessions.push(ns);
+  store.set("gt_sessions", sessions); dbSet("sessions/"+ns.id, ns); viewSess = act().id; $("newsess").value = ""; $("out").classList.add("hide");
   resetForm(); render(); status("New session started: " + esc(name), "ok");
 };
 </script>
