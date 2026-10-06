@@ -45,6 +45,7 @@ textarea{width:100%;height:120px;margin-top:8px;background:var(--bg);color:var(-
 <body>
 <div class="wrap">
 <div id="syncb" class="mu" style="text-align:right;font-size:12px;margin-bottom:6px"></div>
+<div style="text-align:right;margin-bottom:8px"><button id="syncretry" class="hide" type="button">Retry shared sync</button> <button id="syncperm" class="hide" type="button">Permissions</button></div>
 <div id="adm" class="card hide"></div>
 
 <!-- PAGE 1: ACCESS CODE -->
@@ -499,9 +500,24 @@ async function dbSet(path, data){
 async function dbDel(path){ if (!dbx) return; try { await dbx.doc(path).delete(); } catch(e){ setSync("Delete not synced (" + ((e && e.code) || "error") + ")", "er"); } }
 const syncMember = m => dbSet("members/" + m.no, m);
 const hash36 = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
-(async () => {
+let permNs = null, permState = "unknown";
+async function initSync(){
+  if (dbx) return;
+  setSync("Connecting to shared data…");
+  try {
+    permNs = (window.claude && claude.use) ? await claude.use("permissions") : null;
+    if (permNs){
+      permState = await permNs.state("db");
+      if (permState === "prompt"){ const q = await permNs.request(["db"]); permState = q.db || permState; }
+    }
+  } catch(e){}
   try { dbx = (window.claude && claude.use) ? await claude.use("db") : null; } catch(e){ dbx = null; }
-  if (!dbx){ setSync("Local only — data is NOT shared between devices (open the shared link while signed in to claude.ai)", "wa"); return; }
+  $("syncretry").classList.toggle("hide", !!dbx);
+  $("syncperm").classList.toggle("hide", !(permNs && !dbx));
+  if (!dbx){
+    setSync("Local only — NOT shared between devices. Shared data unavailable (permission: " + permState + "). Open the link while signed in to claude.ai with Contributor/Editor access, allow the permission, then Retry.", "er");
+    return;
+  }
   setSync("Connecting to shared data…");
   const L = {m: members.slice(), e: entries.map(x => ({...x})), s: sessions.slice()};   // this device's data, for one-time merge
   const got = {}; let ready = false;
@@ -533,8 +549,12 @@ const hash36 = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h <
     for (const x of add.e) await dbSet("entries/" + x.id, x);
     try { localStorage.setItem("gt_migrated", "1"); } catch(e){}
   }
+  const soft = {};
+  setTimeout(() => {   // if no server-definitive snapshot arrives, show what we have (no one-time merge)
+    if (!ready && soft.m && soft.e && soft.s){ ready = true; applyAll(soft); setSync("Shared data loaded (waiting for server confirmation)", "wa"); }
+  }, 6000);
   const onSnap = (k, snap) => {
-    if (snap.metadata.fromCache) return;            // wait for the server-definitive view
+    if (snap.metadata.fromCache){ soft[k] = snap.docs.map(d => d.data()); if (ready) applyAll({[k]: soft[k]}); return; }
     got[k] = snap.docs.map(d => d.data());
     if (!ready){ if (got.m && got.e && got.s) firstRun(); return; }
     applyAll({[k]: got[k]});
@@ -543,7 +563,10 @@ const hash36 = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h <
   dbx.collection("members").onSnapshot(s => onSnap("m", s), err);
   dbx.collection("entries").onSnapshot(s => onSnap("e", s), err);
   dbx.collection("sessions").onSnapshot(s => onSnap("s", s), err);
-})();
+}
+$("syncretry").onclick = initSync;
+$("syncperm").onclick = async () => { try { await permNs.manage(); } catch(e){} initSync(); };
+initSync();
 
 $("q").oninput = render;
 $("vsess").onchange = () => { viewSess = $("vsess").value; $("out").classList.add("hide"); render(); };
