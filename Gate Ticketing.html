@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gate Ticketing</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#1b1f27;--mu:#6b7280;--bd:#e2e5ea;--ac:#0f766e;--ac2:#fff;--ok:#15803d;--er:#b91c1c;--wa:#b45309;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--card:#1a1f26;--tx:#e8eaee;--mu:#9aa3af;--bd:#2d343e;--ac:#2dd4bf;--ac2:#06201d;--ok:#4ade80;--er:#f87171;--wa:#fbbf24}}
+:root[data-theme="dark"]{--bg:#111418;--card:#1a1f26;--tx:#e8eaee;--mu:#9aa3af;--bd:#2d343e;--ac:#2dd4bf;--ac2:#06201d;--ok:#4ade80;--er:#f87171;--wa:#fbbf24}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+h1{font-size:20px;margin:0}h2{font-size:16px;margin:0 0 10px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px}
+.mu{color:var(--mu);font-size:13px}
+input,select{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px}
+button{padding:10px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+button.p{background:var(--ac);color:var(--ac2);border-color:var(--ac);font-weight:600}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px}.row>*{flex:1}.row>button{flex:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+.msg{padding:10px 12px;border-radius:8px;margin-top:10px;font-size:14px;border:1px solid var(--bd)}
+.ok{color:var(--ok)}.er{color:var(--er)}.wa{color:var(--wa)}
+.login{max-width:340px;margin:18vh auto 0;text-align:center}
+.login input{text-align:center;font-size:22px;letter-spacing:.3em;margin:0 0 14px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mu);font-weight:600;font-size:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.bar h2{margin:0;margin-right:auto}
+textarea{width:100%;height:120px;margin-top:8px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px;font:12px monospace}
+.hide{display:none!important}
+.ph{width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
+.th{width:44px;height:44px;object-fit:cover;border-radius:6px;vertical-align:middle}
+#pa{display:none}
+@media print{#p1,#p2{display:none!important}#pa{display:block}body{background:#fff;color:#000}#pa h2{font-size:16px;margin:0 0 4px}#pa table{font-size:11px}#pa .th{width:80px;height:80px;border-radius:4px}#pa th,#pa td{color:#000;border-bottom:1px solid #999;padding:4px 6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="adm" class="card hide"></div>
+
+<!-- PAGE 1: ACCESS CODE -->
+<div id="p1" class="login card">
+  <h1>🎟️ Gate Ticketing</h1>
+  <div class="mu">Enter access code to continue</div>
+  <label style="text-align:left">Gate (case-sensitive)</label>
+  <input id="gate" placeholder="Gate-1" autocomplete="off" style="text-align:center;font-size:18px;letter-spacing:normal;margin:0">
+  <label style="text-align:left">Access code</label>
+  <input id="code" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autofocus>
+  <button class="p" id="go" style="width:100%">Unlock</button>
+  <div id="cerr" class="er" style="margin-top:8px"></div>
+  <button id="adminBtn1" type="button" style="margin-top:10px;width:100%">Admin</button>
+</div>
+
+<!-- PAGE 2: GATE -->
+<div id="p2" class="hide">
+  <div class="top"><h1>🎟️ Gate Entry — <span id="gname" style="color:var(--ac)"></span></h1><div style="display:flex;gap:8px"><button id="adminBtn">Admin</button><button id="lock">Lock</button></div></div>
+
+  <div class="card">
+    <div class="bar" style="margin:0">
+      <h2>Session: <span id="actname" style="color:var(--ac)"></span></h2>
+      <input id="newsess" placeholder="New session name (e.g. Evening)" style="flex:1;min-width:160px;width:auto">
+      <button id="startsess">Start new session</button>
+    </div>
+    <div class="mu" id="sessinfo" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Member lookup</h2>
+    <div class="row">
+      <input id="mno" placeholder="Member no. (e.g. M1001)" autocomplete="off">
+      <button class="p" id="find">Find</button>
+    </div>
+    <div id="status"></div>
+    <div id="form" class="hide">
+      <div class="grid">
+        <div><label>Member ID</label><input id="f_no" readonly></div>
+        <div><label>Name</label><input id="f_name"></div>
+        <div><label>Contact</label><input id="f_phone" inputmode="tel"></div>
+        <div><label>Photo</label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <img id="f_img" class="ph hide" alt="">
+            <button type="button" id="shot">📷 Take photo</button>
+          </div>
+          <input id="f_file" type="file" accept="image/*" capture="user" class="hide">
+          <div id="phmsg" class="mu"></div>
+        </div>
+        <div><label>Member QR</label><div id="f_qr" style="background:#fff;display:inline-block;padding:6px;border-radius:8px;min-height:20px"></div></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="save">Save changes</button>
+        <button class="p" id="admit">✔ Admit</button>
+      </div>
+    </div>
+    <div class="mu" style="margin-top:10px">Tip: press Enter to search. Edits are saved to the member record.</div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <h2><span id="gtitle"></span> Entered (<span id="cnt">0</span> of <span id="tot">0</span> members)</h2>
+      <button id="csv">Export CSV</button>
+      <button id="copy">Copy</button>
+      <button id="pdf">Export PDF</button>
+      <button id="clr">Clear log</button>
+    </div>
+    <div id="clrbox" class="msg hide" style="margin:0 0 10px">
+      <div id="clrtxt"></div>
+      <div style="display:flex;gap:8px;margin-top:8px"><button id="clryes" class="p">Yes, clear</button><button id="clrno">Cancel</button></div>
+    </div>
+    <div class="row" style="margin-bottom:10px"><select id="vsess" style="flex:0 0 40%"></select>
+      <input id="q" placeholder="Search entered (member no., name, phone, gate)…"></div>
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>Photo</th><th>Member</th><th>Name</th><th>Contact</th><th>Gate</th><th>Session</th></tr></thead>
+      <tbody id="log"></tbody>
+    </table></div>
+    <div id="empty" class="mu" style="padding:10px 0">No entries yet.</div>
+    <textarea id="out" class="hide" readonly></textarea>
+  </div>
+</div>
+<div id="pa"></div>
+</div>
+
+<script>var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this.parsedData=[];for(var b=[],d=0,e=this.data.length;e>d;d++){var f=this.data.charCodeAt(d);f>65536?(b[0]=240|(1835008&f)>>>18,b[1]=128|(258048&f)>>>12,b[2]=128|(4032&f)>>>6,b[3]=128|63&f):f>2048?(b[0]=224|(61440&f)>>>12,b[1]=128|(4032&f)>>>6,b[2]=128|63&f):f>128?(b[0]=192|(1984&f)>>>6,b[1]=128|63&f):b[0]=f,this.parsedData=this.parsedData.concat(b)}this.parsedData.length!=this.data.length&&(this.parsedData.unshift(191),this.parsedData.unshift(187),this.parsedData.unshift(239))}function b(a,b){this.typeNumber=a,this.errorCorrectLevel=b,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}function i(a,b){if(void 0==a.length)throw new Error(a.length+"/"+b);for(var c=0;c<a.length&&0==a[c];)c++;this.num=new Array(a.length-c+b);for(var d=0;d<a.length-c;d++)this.num[d]=a[d+c]}function j(a,b){this.totalCount=a,this.dataCount=b}function k(){this.buffer=[],this.length=0}function m(){return"undefined"!=typeof CanvasRenderingContext2D}function n(){var a=!1,b=navigator.userAgent;return/android/i.test(b)&&(a=!0,aMat=b.toString().match(/android ([0-9]\.[0-9])/i),aMat&&aMat[1]&&(a=parseFloat(aMat[1]))),a}function r(a,b){for(var c=1,e=s(a),f=0,g=l.length;g>=f;f++){var h=0;switch(b){case d.L:h=l[f][0];break;case d.M:h=l[f][1];break;case d.Q:h=l[f][2];break;case d.H:h=l[f][3]}if(h>=e)break;c++}if(c>l.length)throw new Error("Too long data");return c}function s(a){var b=encodeURI(a).toString().replace(/\%[0-9a-fA-F]{2}/g,"a");return b.length+(b.length!=a?3:0)}a.prototype={getLength:function(){return this.parsedData.length},write:function(a){for(var b=0,c=this.parsedData.length;c>b;b++)a.put(this.parsedData[b],8)}},b.prototype={addData:function(b){var c=new a(b);this.dataList.push(c),this.dataCache=null},isDark:function(a,b){if(0>a||this.moduleCount<=a||0>b||this.moduleCount<=b)throw new Error(a+","+b);return this.modules[a][b]},getModuleCount:function(){return this.moduleCount},make:function(){this.makeImpl(!1,this.getBestMaskPattern())},makeImpl:function(a,c){this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);for(var d=0;d<this.moduleCount;d++){this.modules[d]=new Array(this.moduleCount);for(var e=0;e<this.moduleCount;e++)this.modules[d][e]=null}this.setupPositionProbePattern(0,0),this.setupPositionProbePattern(this.moduleCount-7,0),this.setupPositionProbePattern(0,this.moduleCount-7),this.setupPositionAdjustPattern(),this.setupTimingPattern(),this.setupTypeInfo(a,c),this.typeNumber>=7&&this.setupTypeNumber(a),null==this.dataCache&&(this.dataCache=b.createData(this.typeNumber,this.errorCorrectLevel,this.dataList)),this.mapData(this.dataCache,c)},setupPositionProbePattern:function(a,b){for(var c=-1;7>=c;c++)if(!(-1>=a+c||this.moduleCount<=a+c))for(var d=-1;7>=d;d++)-1>=b+d||this.moduleCount<=b+d||(this.modules[a+c][b+d]=c>=0&&6>=c&&(0==d||6==d)||d>=0&&6>=d&&(0==c||6==c)||c>=2&&4>=c&&d>=2&&4>=d?!0:!1)},getBestMaskPattern:function(){for(var a=0,b=0,c=0;8>c;c++){this.makeImpl(!0,c);var d=f.getLostPoint(this);(0==c||a>d)&&(a=d,b=c)}return b},createMovieClip:function(a,b,c){var d=a.createEmptyMovieClip(b,c),e=1;this.make();for(var f=0;f<this.modules.length;f++)for(var g=f*e,h=0;h<this.modules[f].length;h++){var i=h*e,j=this.modules[f][h];j&&(d.beginFill(0,100),d.moveTo(i,g),d.lineTo(i+e,g),d.lineTo(i+e,g+e),d.lineTo(i,g+e),d.endFill())}return d},setupTimingPattern:function(){for(var a=8;a<this.moduleCount-8;a++)null==this.modules[a][6]&&(this.modules[a][6]=0==a%2);for(var b=8;b<this.moduleCount-8;b++)null==this.modules[6][b]&&(this.modules[6][b]=0==b%2)},setupPositionAdjustPattern:function(){for(var a=f.getPatternPosition(this.typeNumber),b=0;b<a.length;b++)for(var c=0;c<a.length;c++){var d=a[b],e=a[c];if(null==this.modules[d][e])for(var g=-2;2>=g;g++)for(var h=-2;2>=h;h++)this.modules[d+g][e+h]=-2==g||2==g||-2==h||2==h||0==g&&0==h?!0:!1}},setupTypeNumber:function(a){for(var b=f.getBCHTypeNumber(this.typeNumber),c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[Math.floor(c/3)][c%3+this.moduleCount-8-3]=d}for(var c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[c%3+this.moduleCount-8-3][Math.floor(c/3)]=d}},setupTypeInfo:function(a,b){for(var c=this.errorCorrectLevel<<3|b,d=f.getBCHTypeInfo(c),e=0;15>e;e++){var g=!a&&1==(1&d>>e);6>e?this.modules[e][8]=g:8>e?this.modules[e+1][8]=g:this.modules[this.moduleCount-15+e][8]=g}for(var e=0;15>e;e++){var g=!a&&1==(1&d>>e);8>e?this.modules[8][this.moduleCount-e-1]=g:9>e?this.modules[8][15-e-1+1]=g:this.modules[8][15-e-1]=g}this.modules[this.moduleCount-8][8]=!a},mapData:function(a,b){for(var c=-1,d=this.moduleCount-1,e=7,g=0,h=this.moduleCount-1;h>0;h-=2)for(6==h&&h--;;){for(var i=0;2>i;i++)if(null==this.modules[d][h-i]){var j=!1;g<a.length&&(j=1==(1&a[g]>>>e));var k=f.getMask(b,d,h-i);k&&(j=!j),this.modules[d][h-i]=j,e--,-1==e&&(g++,e=7)}if(d+=c,0>d||this.moduleCount<=d){d-=c,c=-c;break}}}},b.PAD0=236,b.PAD1=17,b.createData=function(a,c,d){for(var e=j.getRSBlocks(a,c),g=new k,h=0;h<d.length;h++){var i=d[h];g.put(i.mode,4),g.put(i.getLength(),f.getLengthInBits(i.mode,a)),i.write(g)}for(var l=0,h=0;h<e.length;h++)l+=e[h].dataCount;if(g.getLengthInBits()>8*l)throw new Error("code length overflow. ("+g.getLengthInBits()+">"+8*l+")");for(g.getLengthInBits()+4<=8*l&&g.put(0,4);0!=g.getLengthInBits()%8;)g.putBit(!1);for(;;){if(g.getLengthInBits()>=8*l)break;if(g.put(b.PAD0,8),g.getLengthInBits()>=8*l)break;g.put(b.PAD1,8)}return b.createBytes(g,e)},b.createBytes=function(a,b){for(var c=0,d=0,e=0,g=new Array(b.length),h=new Array(b.length),j=0;j<b.length;j++){var k=b[j].dataCount,l=b[j].totalCount-k;d=Math.max(d,k),e=Math.max(e,l),g[j]=new Array(k);for(var m=0;m<g[j].length;m++)g[j][m]=255&a.buffer[m+c];c+=k;var n=f.getErrorCorrectPolynomial(l),o=new i(g[j],n.getLength()-1),p=o.mod(n);h[j]=new Array(n.getLength()-1);for(var m=0;m<h[j].length;m++){var q=m+p.getLength()-h[j].length;h[j][m]=q>=0?p.get(q):0}}for(var r=0,m=0;m<b.length;m++)r+=b[m].totalCount;for(var s=new Array(r),t=0,m=0;d>m;m++)for(var j=0;j<b.length;j++)m<g[j].length&&(s[t++]=g[j][m]);for(var m=0;e>m;m++)for(var j=0;j<b.length;j++)m<h[j].length&&(s[t++]=h[j][m]);return s};for(var c={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},d={L:1,M:0,Q:3,H:2},e={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7},f={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(a){for(var b=a<<10;f.getBCHDigit(b)-f.getBCHDigit(f.G15)>=0;)b^=f.G15<<f.getBCHDigit(b)-f.getBCHDigit(f.G15);return(a<<10|b)^f.G15_MASK},getBCHTypeNumber:function(a){for(var b=a<<12;f.getBCHDigit(b)-f.getBCHDigit(f.G18)>=0;)b^=f.G18<<f.getBCHDigit(b)-f.getBCHDigit(f.G18);return a<<12|b},getBCHDigit:function(a){for(var b=0;0!=a;)b++,a>>>=1;return b},getPatternPosition:function(a){return f.PATTERN_POSITION_TABLE[a-1]},getMask:function(a,b,c){switch(a){case e.PATTERN000:return 0==(b+c)%2;case e.PATTERN001:return 0==b%2;case e.PATTERN010:return 0==c%3;case e.PATTERN011:return 0==(b+c)%3;case e.PATTERN100:return 0==(Math.floor(b/2)+Math.floor(c/3))%2;case e.PATTERN101:return 0==b*c%2+b*c%3;case e.PATTERN110:return 0==(b*c%2+b*c%3)%2;case e.PATTERN111:return 0==(b*c%3+(b+c)%2)%2;default:throw new Error("bad maskPattern:"+a)}},getErrorCorrectPolynomial:function(a){for(var b=new i([1],0),c=0;a>c;c++)b=b.multiply(new i([1,g.gexp(c)],0));return b},getLengthInBits:function(a,b){if(b>=1&&10>b)switch(a){case c.MODE_NUMBER:return 10;case c.MODE_ALPHA_NUM:return 9;case c.MODE_8BIT_BYTE:return 8;case c.MODE_KANJI:return 8;default:throw new Error("mode:"+a)}else if(27>b)switch(a){case c.MODE_NUMBER:return 12;case c.MODE_ALPHA_NUM:return 11;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 10;default:throw new Error("mode:"+a)}else{if(!(41>b))throw new Error("type:"+b);switch(a){case c.MODE_NUMBER:return 14;case c.MODE_ALPHA_NUM:return 13;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 12;default:throw new Error("mode:"+a)}}},getLostPoint:function(a){for(var b=a.getModuleCount(),c=0,d=0;b>d;d++)for(var e=0;b>e;e++){for(var f=0,g=a.isDark(d,e),h=-1;1>=h;h++)if(!(0>d+h||d+h>=b))for(var i=-1;1>=i;i++)0>e+i||e+i>=b||(0!=h||0!=i)&&g==a.isDark(d+h,e+i)&&f++;f>5&&(c+=3+f-5)}for(var d=0;b-1>d;d++)for(var e=0;b-1>e;e++){var j=0;a.isDark(d,e)&&j++,a.isDark(d+1,e)&&j++,a.isDark(d,e+1)&&j++,a.isDark(d+1,e+1)&&j++,(0==j||4==j)&&(c+=3)}for(var d=0;b>d;d++)for(var e=0;b-6>e;e++)a.isDark(d,e)&&!a.isDark(d,e+1)&&a.isDark(d,e+2)&&a.isDark(d,e+3)&&a.isDark(d,e+4)&&!a.isDark(d,e+5)&&a.isDark(d,e+6)&&(c+=40);for(var e=0;b>e;e++)for(var d=0;b-6>d;d++)a.isDark(d,e)&&!a.isDark(d+1,e)&&a.isDark(d+2,e)&&a.isDark(d+3,e)&&a.isDark(d+4,e)&&!a.isDark(d+5,e)&&a.isDark(d+6,e)&&(c+=40);for(var k=0,e=0;b>e;e++)for(var d=0;b>d;d++)a.isDark(d,e)&&k++;var l=Math.abs(100*k/b/b-50)/5;return c+=10*l}},g={glog:function(a){if(1>a)throw new Error("glog("+a+")");return g.LOG_TABLE[a]},gexp:function(a){for(;0>a;)a+=255;for(;a>=256;)a-=255;return g.EXP_TABLE[a]},EXP_TABLE:new Array(256),LOG_TABLE:new Array(256)},h=0;8>h;h++)g.EXP_TABLE[h]=1<<h;for(var h=8;256>h;h++)g.EXP_TABLE[h]=g.EXP_TABLE[h-4]^g.EXP_TABLE[h-5]^g.EXP_TABLE[h-6]^g.EXP_TABLE[h-8];for(var h=0;255>h;h++)g.LOG_TABLE[g.EXP_TABLE[h]]=h;i.prototype={get:function(a){return this.num[a]},getLength:function(){return this.num.length},multiply:function(a){for(var b=new Array(this.getLength()+a.getLength()-1),c=0;c<this.getLength();c++)for(var d=0;d<a.getLength();d++)b[c+d]^=g.gexp(g.glog(this.get(c))+g.glog(a.get(d)));return new i(b,0)},mod:function(a){if(this.getLength()-a.getLength()<0)return this;for(var b=g.glog(this.get(0))-g.glog(a.get(0)),c=new Array(this.getLength()),d=0;d<this.getLength();d++)c[d]=this.get(d);for(var d=0;d<a.getLength();d++)c[d]^=g.gexp(g.glog(a.get(d))+b);return new i(c,0).mod(a)}},j.RS_BLOCK_TABLE=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],j.getRSBlocks=function(a,b){var c=j.getRsBlockTable(a,b);if(void 0==c)throw new Error("bad rs block @ typeNumber:"+a+"/errorCorrectLevel:"+b);for(var d=c.length/3,e=[],f=0;d>f;f++)for(var g=c[3*f+0],h=c[3*f+1],i=c[3*f+2],k=0;g>k;k++)e.push(new j(h,i));return e},j.getRsBlockTable=function(a,b){switch(b){case d.L:return j.RS_BLOCK_TABLE[4*(a-1)+0];case d.M:return j.RS_BLOCK_TABLE[4*(a-1)+1];case d.Q:return j.RS_BLOCK_TABLE[4*(a-1)+2];case d.H:return j.RS_BLOCK_TABLE[4*(a-1)+3];default:return void 0}},k.prototype={get:function(a){var b=Math.floor(a/8);return 1==(1&this.buffer[b]>>>7-a%8)},put:function(a,b){for(var c=0;b>c;c++)this.putBit(1==(1&a>>>b-c-1))},getLengthInBits:function(){return this.length},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0),a&&(this.buffer[b]|=128>>>this.length%8),this.length++}};var l=[[17,14,11,7],[32,26,20,14],[53,42,32,24],[78,62,46,34],[106,84,60,44],[134,106,74,58],[154,122,86,64],[192,152,108,84],[230,180,130,98],[271,213,151,119],[321,251,177,137],[367,287,203,155],[425,331,241,177],[458,362,258,194],[520,412,292,220],[586,450,322,250],[644,504,364,280],[718,560,394,310],[792,624,442,338],[858,666,482,382],[929,711,509,403],[1003,779,565,439],[1091,857,611,461],[1171,911,661,511],[1273,997,715,535],[1367,1059,751,593],[1465,1125,805,625],[1528,1190,868,658],[1628,1264,908,698],[1732,1370,982,742],[1840,1452,1030,790],[1952,1538,1112,842],[2068,1628,1168,898],[2188,1722,1228,958],[2303,1809,1283,983],[2431,1911,1351,1051],[2563,1989,1423,1093],[2699,2099,1499,1139],[2809,2213,1579,1219],[2953,2331,1663,1273]],o=function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){function g(a,b){var c=document.createElementNS("http://www.w3.org/2000/svg",a);for(var d in b)b.hasOwnProperty(d)&&c.setAttribute(d,b[d]);return c}var b=this._htOption,c=this._el,d=a.getModuleCount();Math.floor(b.width/d),Math.floor(b.height/d),this.clear();var h=g("svg",{viewBox:"0 0 "+String(d)+" "+String(d),width:"100%",height:"100%",fill:b.colorLight});h.setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xlink","http://www.w3.org/1999/xlink"),c.appendChild(h),h.appendChild(g("rect",{fill:b.colorDark,width:"1",height:"1",id:"template"}));for(var i=0;d>i;i++)for(var j=0;d>j;j++)if(a.isDark(i,j)){var k=g("use",{x:String(i),y:String(j)});k.setAttributeNS("http://www.w3.org/1999/xlink","href","#template"),h.appendChild(k)}},a.prototype.clear=function(){for(;this._el.hasChildNodes();)this._el.removeChild(this._el.lastChild)},a}(),p="svg"===document.documentElement.tagName.toLowerCase(),q=p?o:m()?function(){function a(){this._elImage.src=this._elCanvas.toDataURL("image/png"),this._elImage.style.display="block",this._elCanvas.style.display="none"}function d(a,b){var c=this;if(c._fFail=b,c._fSuccess=a,null===c._bSupportDataURI){var d=document.createElement("img"),e=function(){c._bSupportDataURI=!1,c._fFail&&_fFail.call(c)},f=function(){c._bSupportDataURI=!0,c._fSuccess&&c._fSuccess.call(c)};return d.onabort=e,d.onerror=e,d.onload=f,d.src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",void 0}c._bSupportDataURI===!0&&c._fSuccess?c._fSuccess.call(c):c._bSupportDataURI===!1&&c._fFail&&c._fFail.call(c)}if(this._android&&this._android<=2.1){var b=1/window.devicePixelRatio,c=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(a,d,e,f,g,h,i,j){if("nodeName"in a&&/img/i.test(a.nodeName))for(var l=arguments.length-1;l>=1;l--)arguments[l]=arguments[l]*b;else"undefined"==typeof j&&(arguments[1]*=b,arguments[2]*=b,arguments[3]*=b,arguments[4]*=b);c.apply(this,arguments)}}var e=function(a,b){this._bIsPainted=!1,this._android=n(),this._htOption=b,this._elCanvas=document.createElement("canvas"),this._elCanvas.width=b.width,this._elCanvas.height=b.height,a.appendChild(this._elCanvas),this._el=a,this._oContext=this._elCanvas.getContext("2d"),this._bIsPainted=!1,this._elImage=document.createElement("img"),this._elImage.style.display="none",this._el.appendChild(this._elImage),this._bSupportDataURI=null};return e.prototype.draw=function(a){var b=this._elImage,c=this._oContext,d=this._htOption,e=a.getModuleCount(),f=d.width/e,g=d.height/e,h=Math.round(f),i=Math.round(g);b.style.display="none",this.clear();for(var j=0;e>j;j++)for(var k=0;e>k;k++){var l=a.isDark(j,k),m=k*f,n=j*g;c.strokeStyle=l?d.colorDark:d.colorLight,c.lineWidth=1,c.fillStyle=l?d.colorDark:d.colorLight,c.fillRect(m,n,f,g),c.strokeRect(Math.floor(m)+.5,Math.floor(n)+.5,h,i),c.strokeRect(Math.ceil(m)-.5,Math.ceil(n)-.5,h,i)}this._bIsPainted=!0},e.prototype.makeImage=function(){this._bIsPainted&&d.call(this,a)},e.prototype.isPainted=function(){return this._bIsPainted},e.prototype.clear=function(){this._oContext.clearRect(0,0,this._elCanvas.width,this._elCanvas.height),this._bIsPainted=!1},e.prototype.round=function(a){return a?Math.floor(1e3*a)/1e3:a},e}():function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){for(var b=this._htOption,c=this._el,d=a.getModuleCount(),e=Math.floor(b.width/d),f=Math.floor(b.height/d),g=['<table style="border:0;border-collapse:collapse;">'],h=0;d>h;h++){g.push("<tr>");for(var i=0;d>i;i++)g.push('<td style="border:0;border-collapse:collapse;padding:0;margin:0;width:'+e+"px;height:"+f+"px;background-color:"+(a.isDark(h,i)?b.colorDark:b.colorLight)+';"></td>');g.push("</tr>")}g.push("</table>"),c.innerHTML=g.join("");var j=c.childNodes[0],k=(b.width-j.offsetWidth)/2,l=(b.height-j.offsetHeight)/2;k>0&&l>0&&(j.style.margin=l+"px "+k+"px")},a.prototype.clear=function(){this._el.innerHTML=""},a}();QRCode=function(a,b){if(this._htOption={width:256,height:256,typeNumber:4,colorDark:"#000000",colorLight:"#ffffff",correctLevel:d.H},"string"==typeof b&&(b={text:b}),b)for(var c in b)this._htOption[c]=b[c];"string"==typeof a&&(a=document.getElementById(a)),this._android=n(),this._el=a,this._oQRCode=null,this._oDrawing=new q(this._el,this._htOption),this._htOption.text&&this.makeCode(this._htOption.text)},QRCode.prototype.makeCode=function(a){this._oQRCode=new b(r(a,this._htOption.correctLevel),this._htOption.correctLevel),this._oQRCode.addData(a),this._oQRCode.make(),this._el.title=a,this._oDrawing.draw(this._oQRCode),this.makeImage()},QRCode.prototype.makeImage=function(){"function"==typeof this._oDrawing.makeImage&&(!this._android||this._android>=3)&&this._oDrawing.makeImage()},QRCode.prototype.clear=function(){this._oDrawing.clear()},QRCode.CorrectLevel=d}();</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+const ACCESS = "2026";
+let dl = null; // "downloads" capability (null when unavailable -> fallbacks)
+try { if (window.claude && claude.use) claude.use("downloads").then(d => { dl = d; }).catch(() => {}); } catch(e){}
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+// Demo members — replace or extend; new ones can be added on the spot at the gate
+const DEMO = [
+  {no:"M1001",name:"Aarav Shah",phone:"9800000001",photo:""},
+  {no:"M1002",name:"Priya Patel",phone:"9800000002",photo:""},
+  {no:"M1003",name:"Rohan Mehta",phone:"9800000003",photo:""},
+  {no:"M1004",name:"Neha Desai",phone:"9800000004",photo:""},
+  {no:"M1005",name:"Kunal Joshi",phone:"9800000005",photo:""}
+];
+let members = store.get("gt_members", null) || DEMO;
+let entries = store.get("gt_entries", []);
+let sessions = store.get("gt_sessions", null);
+if (!sessions || !sessions.length){ sessions = [{id:"s1", name:"Session 1", start:new Date().toLocaleString()}]; store.set("gt_sessions", sessions); }
+entries.forEach(e => { if (!e.sess) e.sess = sessions[0].id; });  // older entries -> first session
+const act = () => sessions[sessions.length-1];            // active session = latest
+const sname = id => (sessions.find(x => x.id === id) || {name:"?"}).name;
+let viewSess = act().id;                                  // "ALL" or a session id
+let current = null, isNew = false, gate = "", reAdmit = null;
+
+function status(t, c){ $("status").innerHTML = t ? `<div class="msg ${c||""}">${t}</div>` : ""; }
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// ---------- Validation ----------
+const RE_GATE=/^[A-Za-z0-9][A-Za-z0-9 _-]{0,19}$/, RE_NO=/^[A-Za-z0-9-]{2,15}$/, RE_NAME=/^\p{L}[\p{L} .'-]{1,59}$/u, RE_PH=/^\+?\d{7,15}$/, RE_SESS=/^[A-Za-z0-9][A-Za-z0-9 _-]{0,29}$/;
+const vGate = v => !v ? "Gate is required" : RE_GATE.test(v) ? "" : "Gate: max 20 chars, letters/numbers/space/-/_ only";
+const vCode = v => !v ? "Access code is required" : /^\d+$/.test(v) ? "" : "Access code must be digits only";
+const vNo   = v => !v ? "Member ID is required" : RE_NO.test(v) ? "" : "Member ID: 2–15 letters, numbers or -";
+const vName = v => !v ? "Name is required" : RE_NAME.test(v) ? "" : "Name: 2–60 letters (spaces . ' - allowed), no digits";
+const vPhone= v => !v ? "Contact is required" : RE_PH.test(v.replace(/[\s-]/g,"")) ? "" : "Contact: 7–15 digits, optional leading +";
+const vSess = v => RE_SESS.test(v) ? "" : "Session name: max 30 chars, letters/numbers/space/-/_ only";
+function fieldErr(id, msg){
+  const el = $(id); let d = $("e_"+id);
+  if (!d){ d = document.createElement("div"); d.id = "e_"+id; d.className = "er"; d.style.fontSize = "12px"; el.parentNode.insertBefore(d, el.nextSibling); }
+  d.textContent = msg || ""; el.style.borderColor = msg ? "var(--er)" : ""; return !msg;
+}
+$("gate").maxLength=20; $("f_name").maxLength=60; $("f_phone").maxLength=16; $("mno").maxLength=40; $("newsess").maxLength=30; $("q").maxLength=50;
+$("code").oninput = () => { $("code").value = $("code").value.replace(/\D/g,""); };
+$("f_phone").oninput = () => { $("f_phone").value = $("f_phone").value.replace(/[^\d+\s-]/g,""); fieldErr("f_phone",""); };
+$("f_name").oninput = () => fieldErr("f_name","");
+$("gate").addEventListener("input", () => fieldErr("gate",""));
+$("code").addEventListener("input", () => fieldErr("code",""));
+
+// Page 1
+function unlock(){
+  const g = $("gate").value.trim(), c = $("code").value.trim();
+  const ge = vGate(g), ce = vCode(c);
+  fieldErr("gate", ge); fieldErr("code", ce);
+  if (ge || ce){ $("cerr").textContent = ""; return; }
+  if (c === ACCESS){
+    gate = g; $("gname").textContent = g; $("gtitle").textContent = "All gates —"; $("q").value = "";
+    $("p1").classList.add("hide"); $("p2").classList.remove("hide"); $("cerr").textContent="";
+    render(); $("mno").focus();
+  } else { $("cerr").textContent = "Wrong code"; $("code").value = ""; }
+}
+$("go").onclick = unlock;
+$("gate").onkeydown = e => { if (e.key === "Enter") $("code").focus(); };
+$("code").onkeydown = e => { if (e.key === "Enter") unlock(); };
+$("lock").onclick = () => { admOk = false; $("adm").classList.add("hide"); $("p2").classList.add("hide"); $("p1").classList.remove("hide"); $("code").value=""; resetForm(); };
+
+// Page 2
+function resetForm(){ reAdmit = null; current=null; isNew=false; $("form").classList.add("hide"); status(""); }
+let curPhoto = "";
+function setPhoto(d){
+  curPhoto = d || "";
+  $("f_img").src = curPhoto; $("f_img").classList.toggle("hide", !curPhoto);
+  $("shot").textContent = curPhoto ? "📷 Retake photo" : "📷 Take photo";
+  $("phmsg").textContent = curPhoto ? "" : "No photo yet (optional) — you can take one";
+}
+function showQr(no){
+  const el = $("f_qr"); el.innerHTML = "";
+  try { new QRCode(el, {text: "GATEPASS|" + no, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.M}); } catch(e){ el.textContent = "QR unavailable"; }
+}
+function fill(m){
+  showQr(m.no);
+  fieldErr("f_name",""); fieldErr("f_phone","");
+  $("f_no").value=m.no; $("f_name").value=m.name||""; $("f_phone").value=m.phone||"";
+  setPhoto(m.photo);
+  $("form").classList.remove("hide");
+}
+$("shot").onclick = () => $("f_file").click();
+$("f_file").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  if (!/^image\//.test(f.type)){ $("phmsg").textContent = "Please choose an image file"; e.target.value = ""; return; }
+  if (f.size > 10*1024*1024){ $("phmsg").textContent = "Image too large (max 10 MB)"; e.target.value = ""; return; }
+  const img = new Image();
+  img.onload = () => {
+    const S = 400, side = Math.min(img.width, img.height);   // centre square crop, higher quality
+    const c = document.createElement("canvas"); c.width = c.height = S;
+    c.getContext("2d").drawImage(img, (img.width-side)/2, (img.height-side)/2, side, side, 0, 0, S, S);
+    setPhoto(c.toDataURL("image/jpeg",.85)); URL.revokeObjectURL(img.src);
+  };
+  img.onerror = () => { $("phmsg").textContent = "Could not read this image"; };
+  img.src = URL.createObjectURL(f); e.target.value = "";
+};
+function find(){
+  let no = $("mno").value.trim();
+  if (/^GATEPASS\|/i.test(no)) { const pt = no.split("|"); no = pt[2] || pt[1] || ""; }   // scanned QR: GATEPASS|<id>|<member>
+  no = no.toUpperCase();
+  if (!no){ resetForm(); status("Enter a member ID", "wa"); return; }
+  const ne = vNo(no); if (ne){ resetForm(); status(ne, "er"); return; }
+  const m = members.find(x => x.no.toUpperCase() === no);
+  if (m){
+    current = {...m}; isNew = false; fill(current);
+    const prev = entries.find(e => e.no === m.no && e.sess === act().id);
+    status((prev ? `⚠ Already entered this session at ${esc(prev.gate)} (${esc(prev.time)}). ` : "Member found. ") + (m.editGate ? `Last edited at ${esc(m.editGate)}.` : ""), prev ? "wa" : "ok");
+  } else {
+    current = {no, name:"", phone:"", photo:""}; isNew = true; fill(current);
+    status("Member not found — fill details to add as a new member", "er");
+  }
+}
+function readForm(){
+  return {no:$("f_no").value, name:$("f_name").value.trim(), phone:$("f_phone").value.trim(), photo:curPhoto};
+}
+function saveMember(){
+  const m = readForm();
+  m.phone = m.phone.replace(/[\s-]/g,"");
+  const en = vName(m.name), ep = vPhone(m.phone), ei = vNo(m.no);
+  fieldErr("f_name", en); fieldErr("f_phone", ep);
+  if (ei){ status(ei, "er"); return null; }
+  if (en || ep){ status("Please fix the highlighted fields", "er"); return null; }
+  const i = members.findIndex(x => x.no === m.no);
+  const old = i >= 0 ? members[i] : null;
+  const changed = !old || ["name","phone","photo"].some(k => old[k] !== m[k]);
+  m.editGate = changed ? gate : (old.editGate || "");
+  m.editTime = changed ? new Date().toLocaleString() : (old.editTime || "");
+  if (i >= 0) members[i] = m; else members.push(m);
+  store.set("gt_members", members); isNew = false; current = m; render();
+  return m;
+}
+$("find").onclick = find;
+$("mno").onkeydown = e => { if (e.key === "Enter") find(); };
+$("save").onclick = () => { if (saveMember()) status("Details saved", "ok"); };
+$("admit").onclick = () => {
+  const m = saveMember(); if (!m) return;
+  if (entries.some(e => e.no === m.no && e.sess === act().id) && reAdmit !== m.no){
+    reAdmit = m.no; status("⚠ Already entered this session. Press Admit again to record a re-entry.", "wa"); return;
+  }
+  reAdmit = null;
+  entries.unshift({no:m.no, name:m.name, phone:m.phone, gate, sess:act().id, time: new Date().toLocaleString()});
+  store.set("gt_entries", entries); viewSess = act().id; render();
+  $("mno").value=""; resetForm(); status(`✔ ${esc(m.name)} admitted` + (entries.filter(e=>e.no===m.no && e.sess===act().id).length>1 ? " (re-entry recorded)" : ""), "ok"); $("mno").focus();
+};
+
+function phOf(no){ const m = members.find(x=>x.no===no); return m && m.photo ? `<img class="th" src="${m.photo}" alt="">` : "—"; }
+function match(e){
+  const q = $("q").value.trim().toLowerCase();
+  return !q || [e.no,e.name,e.phone,e.gate,e.time].some(v => String(v||"").toLowerCase().includes(q));
+}
+const scoped = () => entries.filter(e => viewSess === "ALL" || e.sess === viewSess);
+const key = e => e.sess + "|" + e.no;
+// Entered list: each member once per session, with first entry time (re-entries recorded, not shown)
+function view(){
+  const sc = scoped(), seen = new Set(), first = new Set();
+  for (let i = sc.length-1; i >= 0; i--){ if (!seen.has(key(sc[i]))){ seen.add(key(sc[i])); first.add(sc[i]); } }
+  return sc.filter(e => first.has(e) && match(e));
+}
+// Export: every entry in scope, re-entries included, with times
+function viewAll(){
+  const sc = scoped(), seen = new Set(), re = new Map();
+  for (let i = sc.length-1; i >= 0; i--){ re.set(sc[i], seen.has(key(sc[i]))); seen.add(key(sc[i])); }
+  return sc.filter(match).map(e => ({...e, re: re.get(e)}));
+}
+function sessUI(){
+  $("actname").textContent = act().name;
+  $("sessinfo").textContent = "Started " + act().start + ". New entries go to this session.";
+  $("vsess").innerHTML = '<option value="ALL">All sessions</option>' + sessions.slice().reverse().map(x => `<option value="${esc(x.id)}">${esc(x.name)}${x.id===act().id?" (active)":""}</option>`).join("");
+  $("vsess").value = viewSess;
+}
+function render(){
+  const sc = scoped(), list = view(), total = sc.length;
+  $("log").innerHTML = list.map((e,i) => `<tr><td>${list.length-i}</td><td>${phOf(e.no)}</td><td>${esc(e.no)}</td><td>${esc(e.name)}</td><td>${esc(e.phone)}</td><td>${esc(e.gate)}</td><td>${esc(sname(e.sess))}</td></tr>`).join("");
+  $("empty").textContent = total ? "No matches." : "No entries yet.";
+  $("empty").classList.toggle("hide", list.length>0);
+  $("cnt").textContent = new Set(sc.map(e=>e.no)).size;
+  $("tot").textContent = members.length;
+  sessUI();
+}
+function csv(){
+  const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
+  const rows = [["Session","Gate","Member No","Name","Contact","Entry Time","Entry Type","Details Last Edited At"]]
+    .concat(viewAll().slice().reverse().map(e => [sname(e.sess),e.gate,e.no,e.name,e.phone,e.time,e.re?"Re-entry":"First entry",(members.find(m=>m.no===e.no)||{}).editGate||""]));
+  return rows.map(r => r.map(q).join(",")).join("\n");
+}
+function showOut(t){ const o=$("out"); o.value=t; o.classList.remove("hide"); o.select(); }
+const stamp = () => new Date().toISOString().slice(0,10);
+async function saveFile(filename, data){
+  if (!dl) return false;
+  try { await dl.save({filename, data}); status("✔ " + esc(filename) + " saved", "ok"); }
+  catch(e){ status(e && e.code === "declined" ? "Save cancelled" : "Could not save file (" + ((e && e.code) || "error") + ")", e && e.code === "declined" ? "wa" : "er"); }
+  return true;
+}
+$("csv").onclick = async () => {
+  if (!viewAll().length){ status("Nothing to export", "wa"); return; }
+  const t = csv();
+  if (await saveFile("gate-entries-" + stamp() + ".csv", "\ufeff" + t)) return;
+  showOut(t); status("Download not available here — copy the CSV from the box below", "wa");
+};
+$("copy").onclick = async () => {
+  if (!viewAll().length){ status("Nothing to copy", "wa"); return; }
+  const t = csv(); showOut(t);
+  try { await navigator.clipboard.writeText(t); status("CSV copied", "ok"); } catch(e){ document.execCommand && document.execCommand("copy"); }
+};
+const clrScope = () => viewSess==="ALL" ? "ALL sessions" : sname(viewSess);
+$("clr").onclick = () => {
+  if (!scoped().length){ status("Nothing to clear", "wa"); return; }
+  $("clrtxt").textContent = "Clear all " + scoped().length + " entry records for " + clrScope() + " (every gate)? This cannot be undone.";
+  $("clrbox").classList.remove("hide");
+};
+$("clrno").onclick = () => $("clrbox").classList.add("hide");
+$("clryes").onclick = () => {
+  entries = viewSess==="ALL" ? [] : entries.filter(e => e.sess !== viewSess);
+  store.set("gt_entries", entries);
+  $("clrbox").classList.add("hide"); $("out").classList.add("hide");
+  render(); status("Log cleared for " + esc(clrScope()), "ok");
+};
+$("pdf").onclick = async () => {
+  const list = viewAll().slice().reverse();
+  if (!list.length){ status("Nothing to export", "wa"); return; }
+  const scope = viewSess==="ALL" ? "All sessions" : sname(viewSess);
+  const J = window.jspdf && window.jspdf.jsPDF;
+  if (dl && J){
+    try {
+      const doc = new J({orientation:"landscape", unit:"mm", format:"a4"});
+      doc.setFontSize(14); doc.text("Gate Entry Report", 14, 14);
+      doc.setFontSize(9); doc.text(`Gate: ${gate}   Session: ${scope}   Generated: ${new Date().toLocaleString()}   Records: ${list.length}`, 14, 20);
+      const hasPh = no => { const m = members.find(x => x.no === no); return m && m.photo ? m.photo : ""; };
+      doc.autoTable({
+        startY: 25, margin: {left: 14, right: 14, bottom: 14}, theme: "grid",
+        head: [["#","Photo","Session","Gate","Member ID","Name","Contact","Entry Time","Type"]],
+        body: list.map((e,i) => [i+1, hasPh(e.no) ? "" : "-", sname(e.sess), e.gate, e.no, e.name, e.phone, e.time, e.re ? "Re-entry" : "First entry"]),
+        styles: {fontSize:8, cellPadding:1.5, minCellHeight:26, valign:"middle", lineColor:[210,214,220], lineWidth:0.2, overflow:"linebreak"},
+        headStyles: {fillColor:[15,118,110], textColor:255, fontSize:8, halign:"left", minCellHeight:8},
+        alternateRowStyles: {fillColor:[246,248,250]},
+        columnStyles: {
+          0:{cellWidth:8, halign:"center"}, 1:{cellWidth:26, halign:"center"}, 2:{cellWidth:28}, 3:{cellWidth:20},
+          4:{cellWidth:24}, 5:{cellWidth:56}, 6:{cellWidth:30}, 7:{cellWidth:40, fontSize:6.5, textColor:[107,114,128]}, 8:{cellWidth:24}
+        },
+        didDrawCell: d => {
+          if (d.section !== "body" || d.column.index !== 1) return;
+          const img = hasPh(list[d.row.index].no); if (!img) return;
+          try {
+            const pr = doc.getImageProperties(img), box = 22, k = Math.min(box/pr.width, box/pr.height);
+            const w = pr.width*k, h = pr.height*k;
+            doc.addImage(img, "JPEG", d.cell.x + (d.cell.width-w)/2, d.cell.y + (d.cell.height-h)/2, w, h);
+          } catch(e){}
+        }
+      });
+      const pages = doc.getNumberOfPages();
+      for (let i = 1; i <= pages; i++){ doc.setPage(i); doc.setFontSize(7); doc.setTextColor(120); doc.text(`Page ${i} of ${pages}`, 283, 203, {align:"right"}); }
+      await saveFile("gate-report-" + stamp() + ".pdf", doc.output("arraybuffer"));
+    } catch(e){ status("Could not build PDF", "er"); }
+    return;
+  }
+  // Fallback: browser print dialog -> Save as PDF
+  $("pa").innerHTML = `<h2>Gate Entry Report</h2><div style="font-size:12px;margin-bottom:8px">Gate: ${esc(gate)} · Session: ${esc(scope)} · Generated: ${esc(new Date().toLocaleString())} · Records: ${list.length}</div>
+  <table><thead><tr><th>#</th><th>Photo</th><th>Session</th><th>Gate</th><th>Member ID</th><th>Name</th><th>Contact</th><th>Entry Time</th><th>Type</th></tr></thead><tbody>`
+  + list.map((e,i) => `<tr><td>${i+1}</td><td>${phOf(e.no)}</td><td>${esc(sname(e.sess))}</td><td>${esc(e.gate)}</td><td>${esc(e.no)}</td><td>${esc(e.name)}</td><td>${esc(e.phone)}</td><td>${esc(e.time)}</td><td>${e.re?"Re-entry":"First entry"}</td></tr>`).join("")
+  + "</tbody></table>";
+  try { window.print(); } catch(err){ status("PDF not available here — use Export CSV", "er"); }
+};
+
+// ---------- Admin (sessions / gates / members overview, single fixed password) ----------
+const ADMIN_HASH = "76fa7ca78cb87f8b96908083a7bbe25d17a06803270dce141789a3308e336b34"; let admOk = false;   // SHA-256 of the admin password
+async function sha256(t){
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+  return Array.from(new Uint8Array(d), x => x.toString(16).padStart(2,"0")).join("");
+}
+function admDraw(){
+  const A = $("adm");
+  if (!admOk){
+    A.innerHTML = `<h2>Admin sign in</h2>
+      <div class="row"><input id="ap" type="password" placeholder="Admin password" maxlength="64" autocomplete="off"><button class="p" id="apgo">Enter</button><button id="admx" type="button">Close</button></div>
+      <div id="apm" class="er" style="margin-top:6px"></div>`;
+    const go = async () => {
+      const m = $("apm"); m.textContent = "";
+      try {
+        if (await sha256($("ap").value) !== ADMIN_HASH){ m.textContent = "Incorrect password"; $("ap").value = ""; return; }
+        admOk = true; admDraw();
+      } catch(e){ m.textContent = "Could not verify (needs HTTPS)"; }
+    };
+    $("apgo").onclick = go; $("ap").onkeydown = e => { if (e.key === "Enter") go(); };
+    $("admx").onclick = closeAdmin;
+    $("ap").focus();
+    return;
+  }
+  A.innerHTML = `<div class="bar"><h2>Admin — all data</h2><button id="admref">Refresh</button><button id="admx" type="button">← Back</button></div>
+    <div class="mu" id="admstats" style="margin-bottom:10px"></div>
+    <div class="row" style="margin-bottom:8px">
+      <select id="admsess"></select>
+      <select id="admflt"><option value="all">All members</option><option value="in">Entered</option><option value="out">Not entered</option></select>
+    </div>
+    <div class="row" style="margin-bottom:10px"><input id="admq" placeholder="Search member no., name, contact, gate…" maxlength="50"><button id="admcsv" type="button">Export CSV</button></div>
+    <div class="tw"><table><thead><tr><th>Photo</th><th>Member ID</th><th>Name</th><th>Contact</th><th>Status</th><th>First entry</th><th>Gate</th><th>Entries</th><th>Last edited at</th></tr></thead><tbody id="admrows"></tbody></table></div>
+    <div id="admempty" class="mu" style="padding:10px 0"></div>
+    <textarea id="admout" class="hide" readonly></textarea>
+    <h2 style="margin-top:18px">Sessions</h2>
+    <div class="tw"><table><thead><tr><th>Session</th><th>Started</th><th>Entries</th><th>Members</th><th>Gates (entries)</th></tr></thead><tbody id="admsessrows"></tbody></table></div>`;
+  $("admsess").innerHTML = '<option value="ALL">Entered in: any session</option>' + sessions.slice().reverse().map(x => `<option value="${esc(x.id)}">Entered in: ${esc(x.name)}</option>`).join("");
+  $("admsess").value = admSess; $("admflt").value = admFlt; $("admq").value = admQ;
+  $("admref").onclick = admDraw; $("admx").onclick = closeAdmin;
+  $("admsess").onchange = () => { admSess = $("admsess").value; admTable(); };
+  $("admflt").onchange = () => { admFlt = $("admflt").value; admTable(); };
+  $("admq").oninput = () => { admQ = $("admq").value; admTable(); };
+  $("admcsv").onclick = async () => {
+    const list = admList(); if (!list.length){ return; }
+    const q = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+    const rows = [["Member No","Name","Contact","Status","Session","First Entry Time","Gate","Entry Count","Last Edited Gate","Last Edited Time"]]
+      .concat(list.map(r => [r.m.no, r.m.name, r.m.phone, r.entered ? "Entered" : "Not entered", admSess === "ALL" ? "Any" : sname(admSess), r.first ? r.first.time : "", r.first ? r.first.gate : "", r.es.length, r.m.editGate || "", r.m.editTime || ""]));
+    const t = rows.map(r => r.map(q).join(",")).join("\n");
+    if (await saveFile("members-" + stamp() + ".csv", "\ufeff" + t)) return;
+    const o = $("admout"); o.value = t; o.classList.remove("hide"); o.select();
+  };
+  const sr = sessions.slice().reverse().map(x => {
+    const es = entries.filter(e => e.sess === x.id), g = {};
+    es.forEach(e => g[e.gate] = (g[e.gate]||0) + 1);
+    return `<tr><td>${esc(x.name)}</td><td>${esc(x.start)}</td><td>${es.length}</td><td>${new Set(es.map(e=>e.no)).size}</td><td>${Object.entries(g).map(([k,v]) => esc(k)+" ("+v+")").join(", ") || "—"}</td></tr>`;
+  }).join("");
+  $("admsessrows").innerHTML = sr;
+  admTable();
+}
+let admSess = "ALL", admFlt = "all", admQ = "", admPrev = "p1";
+// All members (entered or not) with their status in the chosen session scope
+function admList(){
+  const q = admQ.trim().toLowerCase();
+  return members.map(m => {
+    const es = entries.filter(e => e.no === m.no && (admSess === "ALL" || e.sess === admSess));
+    return {m, es, entered: es.length > 0, first: es[es.length-1]};
+  }).filter(r => (admFlt === "all" || (admFlt === "in") === r.entered)
+    && (!q || [r.m.no, r.m.name, r.m.phone, r.first && r.first.gate, r.m.editGate].some(v => String(v||"").toLowerCase().includes(q))));
+}
+function admTable(){
+  const all = members.length, inn = members.filter(m => entries.some(e => e.no === m.no && (admSess === "ALL" || e.sess === admSess))).length;
+  $("admstats").innerHTML = `Members: <b>${all}</b> · Entered: <b>${inn}</b> · Not entered: <b>${all-inn}</b> · Sessions: <b>${sessions.length}</b> · Total entries: <b>${entries.length}</b> · Gates used: <b>${new Set(entries.map(e=>e.gate)).size}</b>`;
+  const list = admList();
+  $("admrows").innerHTML = list.map(r => `<tr><td>${phOf(r.m.no)}</td><td>${esc(r.m.no)}</td><td>${esc(r.m.name)}</td><td>${esc(r.m.phone)}</td><td class="${r.entered ? "ok" : "wa"}">${r.entered ? "Entered" : "Not entered"}</td><td>${r.first ? esc(r.first.time) : "—"}</td><td>${r.first ? esc(r.first.gate) : "—"}</td><td>${r.es.length}</td><td>${esc(r.m.editGate || "—")}</td></tr>`).join("");
+  $("admempty").textContent = list.length ? "" : "No members match.";
+}
+function openAdmin(){
+  admPrev = $("p2").classList.contains("hide") ? "p1" : "p2";
+  $("p1").classList.add("hide"); $("p2").classList.add("hide"); $("adm").classList.remove("hide"); admDraw();
+}
+function closeAdmin(){ $("adm").classList.add("hide"); $(admPrev).classList.remove("hide"); }
+$("adminBtn").onclick = $("adminBtn1").onclick = openAdmin;
+
+$("q").oninput = render;
+$("vsess").onchange = () => { viewSess = $("vsess").value; $("out").classList.add("hide"); render(); };
+$("startsess").onclick = () => {
+  const raw = $("newsess").value.trim(), se = raw ? vSess(raw) : "";
+  if (se){ status(se, "er"); return; }
+  const name = raw || ("Session " + (sessions.length+1));
+  if (sessions.some(x => x.name === name)){ status("Session name already used", "er"); return; }
+  sessions.push({id:"s"+Date.now(), name, start:new Date().toLocaleString()});
+  store.set("gt_sessions", sessions); viewSess = act().id; $("newsess").value = ""; $("out").classList.add("hide");
+  resetForm(); render(); status("New session started: " + esc(name), "ok");
+};
+</script>
+</body>
+</html>
